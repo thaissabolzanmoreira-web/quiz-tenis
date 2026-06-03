@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz de Tênis</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #d8f3dc;
+    --yellow: #f4d03f;
+    --dark: #1a1a2e;
+    --white: #fafaf8;
+    --gray: #6b6b6b;
+    --red: #e05252;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--dark);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(45,106,79,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 80%, rgba(82,183,136,0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* Linhas de quadra decorativas */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      linear-gradient(rgba(82,183,136,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(82,183,136,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 640px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* TELA INICIAL */
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeUp .5s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* HEADER */
+  .hero {
+    text-align: center;
+    padding: 48px 32px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border: 1px solid rgba(82,183,136,0.2);
+    border-radius: 24px;
+    backdrop-filter: blur(10px);
+  }
+
+  .ball-icon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 16px;
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 900;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 span { color: var(--green-light); }
+
+  .hero p {
+    color: rgba(255,255,255,0.5);
+    font-size: 1rem;
+    margin-bottom: 32px;
+    font-weight: 300;
+  }
+
+  .categories {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .cat-pill {
+    background: rgba(82,183,136,0.1);
+    border: 1px solid rgba(82,183,136,0.3);
+    color: var(--green-light);
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-start {
+    background: var(--green-light);
+    color: var(--dark);
+    border: none;
+    padding: 16px 48px;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-start:hover {
+    background: #74c69d;
+    transform: scale(1.04);
+  }
+
+  /* QUIZ CARD */
+  .quiz-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border: 1px solid rgba(82,183,136,0.15);
+    border-radius: 24px;
+    padding: 32px 28px;
+    backdrop-filter: blur(10px);
+  }
+
+  .progress-bar-wrap {
+    background: rgba(255,255,255,0.08);
+    border-radius: 100px;
+    height: 4px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--green-light));
+    border-radius: 100px;
+    transition: width .4s ease;
+  }
+
+  .q-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .q-number {
+    font-size: 0.78rem;
+    color: var(--green-light);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .q-category {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.06);
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+
+  .question-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.1rem, 4vw, 1.4rem);
+    color: var(--white);
+    line-height: 1.4;
+    margin-bottom: 28px;
+    font-weight: 700;
+  }
+
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .option-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 14px 18px;
+    text-align: left;
+    color: rgba(255,255,255,0.8);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    background: rgba(82,183,136,0.1);
+    border-color: rgba(82,183,136,0.4);
+    color: var(--white);
+  }
+
+  .option-letter {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .option-btn.correct {
+    background: rgba(82,183,136,0.15);
+    border-color: var(--green-light);
+    color: var(--white);
+  }
+
+  .option-btn.correct .option-letter {
+    background: var(--green-light);
+    color: var(--dark);
+  }
+
+  .option-btn.wrong {
+    background: rgba(224,82,82,0.1);
+    border-color: var(--red);
+    color: rgba(255,255,255,0.5);
+  }
+
+  .option-btn.wrong .option-letter {
+    background: var(--red);
+    color: white;
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  /* FEEDBACK */
+  .feedback-box {
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    display: none;
+    margin-bottom: 20px;
+    animation: fadeUp .3s ease;
+  }
+
+  .feedback-box.show { display: block; }
+
+  .feedback-box.correct-fb {
+    background: rgba(82,183,136,0.1);
+    border: 1px solid rgba(82,183,136,0.3);
+    color: #95d5b2;
+  }
+
+  .feedback-box.wrong-fb {
+    background: rgba(224,82,82,0.08);
+    border: 1px solid rgba(224,82,82,0.3);
+    color: #f08080;
+  }
+
+  .btn-next {
+    width: 100%;
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    padding: 14px;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    display: none;
+  }
+
+  .btn-next.show { display: block; animation: fadeUp .3s ease; }
+  .btn-next:hover { background: var(--green-light); color: var(--dark); }
+
+  /* RESULTADO */
+  .result-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border: 1px solid rgba(82,183,136,0.2);
+    border-radius: 24px;
+    padding: 40px 28px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+  }
+
+  .score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(var(--green-light) 0deg, rgba(255,255,255,0.08) 0deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    position: relative;
+  }
+
+  .score-inner {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.4);
+    font-weight: 300;
+  }
+
+  .result-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+
+  .result-sub {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+    font-weight: 300;
+  }
+
+  .result-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .rb-item {
+    text-align: center;
+  }
+
+  .rb-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .rb-val.green { color: var(--green-light); }
+  .rb-val.red { color: var(--red); }
+
+  .rb-lbl {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .btn-replay {
+    background: transparent;
+    border: 1px solid rgba(82,183,136,0.4);
+    color: var(--green-light);
+    padding: 13px 36px;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .btn-replay:hover {
+    background: rgba(82,183,136,0.1);
+    border-color: var(--green-light);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- TELA INICIAL -->
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <span class="ball-icon">🎾</span>
+      <h1>Quiz de <span>Tênis</span></h1>
+      <p>Teste seus conhecimentos sobre o esporte</p>
+      <div class="categories">
+        <span class="cat-pill">🏆 Títulos & Recordes</span>
+        <span class="cat-pill">🌍 Países</span>
+        <span class="cat-pill">📋 Regras</span>
+        <span class="cat-pill">🎯 Curiosidades</span>
+      </div>
+      <button class="btn-start" onclick="startQuiz()">Começar Quiz</button>
+    </div>
+  </div>
+
+  <!-- TELA DO QUIZ -->
+  <div class="screen" id="screen-quiz">
+    <div class="quiz-card">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+      <div class="q-meta">
+        <span class="q-number" id="q-number">PERGUNTA 1 / 15</span>
+        <span class="q-category" id="q-category">Regras</span>
+      </div>
+      <div class="question-text" id="question-text"></div>
+      <div class="options-grid" id="options-grid"></div>
+      <div class="feedback-box" id="feedback-box"></div>
+      <button class="btn-next" id="btn-next" onclick="nextQuestion()">Próxima →</button>
+    </div>
+  </div>
+
+  <!-- TELA DE RESULTADO -->
+  <div class="screen" id="screen-result">
+    <div class="result-card">
+      <div class="score-circle" id="score-circle">
+        <div class="score-inner">
+          <div class="score-num" id="score-num">0</div>
+          <div class="score-label">pontos</div>
+        </div>
+      </div>
+      <div class="result-title" id="result-title">Excelente!</div>
+      <div class="result-sub" id="result-sub">Você domina o tênis</div>
+      <div class="result-breakdown">
+        <div class="rb-item">
+          <div class="rb-val green" id="rb-correct">0</div>
+          <div class="rb-lbl">Acertos</div>
+        </div>
+        <div class="rb-item">
+          <div class="rb-val" style="color:rgba(255,255,255,0.3)">40</div>
+          <div class="rb-lbl">Total</div>
+        </div>
+        <div class="rb-item">
+          <div class="rb-val red" id="rb-wrong">0</div>
+          <div class="rb-lbl">Erros</div>
+        </div>
+      </div>
+      <button class="btn-replay" onclick="resetQuiz()">Jogar novamente</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  // --- REGRAS ---
+  {
+    q: "Quando há empate em 40x40, como se chama essa situação no tênis?",
+    opts: ["Tie-break", "Deuce", "Advantage", "Fault"],
+    answer: 1,
+    cat: "📋 Regras",
+    explain: "Quando ambos chegam a 40x40, chama-se 'Deuce' (Iguais). A partir daí, é preciso vencer dois pontos seguidos para ganhar o game."
+  },
+  {
+    q: "Qual é o nome correto quando um saque cai fora da área de serviço ou na rede?",
+    opts: ["Double fault", "Let", "Fault", "Ace"],
+    answer: 2,
+    cat: "📋 Regras",
+    explain: "Quando o saque cai fora ou na rede, é chamado de 'Fault'. Dois faults seguidos resultam em 'Double fault', e o ponto vai para o adversário."
+  },
+  {
+    q: "O que acontece quando o saque toca a rede e cai dentro da área de serviço correta?",
+    opts: ["Fault (falta)", "O ponto é do adversário", "Let — repete o saque", "Ace"],
+    answer: 2,
+    cat: "📋 Regras",
+    explain: "Quando o saque toca a rede e cai na área correta, chama-se 'Let'. O saque é simplesmente repetido, sem contar como falta."
+  },
+  {
+    q: "Quantos sets precisa vencer para ganhar uma partida em um Grand Slam masculino?",
+    opts: ["2 sets", "3 sets", "4 sets", "5 sets"],
+    answer: 1,
+    cat: "📋 Regras",
+    explain: "No tênis masculino de Grand Slam, as partidas são 'melhor de 5 sets', ou seja, é preciso vencer 3 sets para ganhar."
+  },
+  {
+    q: "No tênis, o que significa 'Love'?",
+    opts: ["Vantagem do sacador", "Ponto extra por belo golpe", "Zero pontos", "Empate no set"],
+    answer: 2,
+    cat: "📋 Regras",
+    explain: "No tênis, 'Love' significa zero. A pontuação de um game começa em Love-Love (0 a 0). A origem mais aceita vem do francês 'l'oeuf' (o ovo), símbolo do zero."
+  },
+  {
+    q: "Quantos games são necessários para vencer um set normalmente (sem tie-break)?",
+    opts: ["4 games", "5 games", "6 games", "7 games"],
+    answer: 2,
+    cat: "📋 Regras",
+    explain: "Para vencer um set normalmente, é preciso vencer 6 games com pelo menos 2 de vantagem. Se o placar chegar a 6x6, geralmente ocorre o tie-break."
+  },
+  {
+    q: "O que é o tie-break no tênis?",
+    opts: ["Saque extra no final do set", "Game especial para decidir um set empatado em 6x6", "Penalidade por atraso", "Segundo saque após dupla falta"],
+    answer: 1,
+    cat: "📋 Regras",
+    explain: "O tie-break é jogado quando o set está 6x6. O primeiro a chegar a 7 pontos (com 2 de vantagem) vence o set. No 5º set de alguns Grand Slams, as regras podem variar."
+  },
+  {
+    q: "Qual é a pontuação correta de um game no tênis?",
+    opts: ["1, 2, 3, 4", "10, 20, 30, 40", "15, 30, 40, game", "0, 1, 2, 3"],
+    answer: 2,
+    cat: "📋 Regras",
+    explain: "A pontuação de um game segue a sequência 15, 30, 40 e depois 'game'. Se chegar a 40x40 (Deuce), o jogador precisa vencer dois pontos consecutivos."
+  },
+  {
+    q: "Em qual situação o jogador perde o ponto automaticamente ao sacar?",
+    opts: ["Se pisar na linha antes de bater", "Se jogar muito alto", "Se cometer double fault", "Se demorar mais de 30 segundos"],
+    answer: 2,
+    cat: "📋 Regras",
+    explain: "O double fault ocorre quando o jogador erra o saque duas vezes seguidas, perdendo o ponto automaticamente."
+  },
+  {
+    q: "Como se chama quando a bola bate na linha e ainda é considerada boa?",
+    opts: ["Out", "Fault", "In (na linha)", "Let"],
+    answer: 2,
+    cat: "📋 Regras",
+    explain: "No tênis, se a bola tocar qualquer parte da linha, ela é considerada boa (dentro). Só é 'out' se cair completamente fora da linha."
+  },
+  // --- RECORDES E TÍTULOS ---
+  {
+    q: "Quantos Grand Slams o Novak Djokovic conquistou ao longo da carreira?",
+    opts: ["21", "22", "23", "24"],
+    answer: 3,
+    cat: "🏆 Recordes",
+    explain: "Djokovic tem 24 títulos de Grand Slam, sendo o maior vencedor de Grand Slams da história do tênis masculino."
+  },
+  {
+    q: "Rafael Nadal tem quantos títulos de Roland Garros?",
+    opts: ["12", "14", "13", "11"],
+    answer: 1,
+    cat: "🏆 Recordes",
+    explain: "Rafael Nadal conquistou Roland Garros incríveis 14 vezes, o que lhe rendeu o apelido de 'Rei do Saibro'. Um recorde absoluto em um único Grand Slam."
+  },
+  {
+    q: "Qual tenista ganhou o maior número de títulos de Wimbledon no masculino?",
+    opts: ["Roger Federer", "Pete Sampras", "Novak Djokovic", "Rafael Nadal"],
+    answer: 0,
+    cat: "🏆 Recordes",
+    explain: "Roger Federer é o maior vencedor de Wimbledon no masculino, com 8 títulos. Uma marca histórica no torneio mais tradicional do tênis."
+  },
+  {
+    q: "Qual tenista masculino ganhou o 'Career Golden Slam' (todos os 4 Grand Slams + ouro olímpico)?",
+    opts: ["Andre Agassi", "Rafael Nadal", "Roger Federer", "Novak Djokovic"],
+    answer: 0,
+    cat: "🏆 Recordes",
+    explain: "Andre Agassi foi o primeiro homem a conquistar o 'Career Golden Slam', vencendo todos os 4 Grand Slams mais o ouro olímpico em Atlanta 1996."
+  },
+  {
+    q: "Quantos títulos de Grand Slam Roger Federer conquistou na carreira?",
+    opts: ["18", "19", "20", "21"],
+    answer: 2,
+    cat: "🏆 Recordes",
+    explain: "Roger Federer conquistou 20 títulos de Grand Slam ao longo de sua incrível carreira, sendo o recorde masculino na época de sua aposentadoria em 2022."
+  },
+  {
+    q: "Serena Williams tem quantos títulos de Grand Slam femininos?",
+    opts: ["21", "23", "25", "19"],
+    answer: 1,
+    cat: "🏆 Recordes",
+    explain: "Serena Williams conquistou 23 títulos de Grand Slam, sendo a tenista feminina com mais títulos na Era Open (a partir de 1968)."
+  },
+  {
+    q: "Quem detém o recorde de maior número de títulos de Grand Slam femininos de todos os tempos?",
+    opts: ["Steffi Graf", "Martina Navratilova", "Margaret Court", "Serena Williams"],
+    answer: 2,
+    cat: "🏆 Recordes",
+    explain: "Margaret Court tem 24 títulos de Grand Slam no total, o maior número da história feminina, incluindo títulos anteriores à Era Open."
+  },
+  {
+    q: "Qual foi o primeiro tenista a completar o 'Career Grand Slam' (vencer os 4 Grand Slams ao longo da carreira)?",
+    opts: ["Rod Laver", "Don Budge", "Fred Perry", "Ken Rosewall"],
+    answer: 1,
+    cat: "🏆 Recordes",
+    explain: "Don Budge foi o primeiro a vencer os quatro Grand Slams ao longo de sua carreira, em 1938. Rod Laver foi o primeiro a fazer isso em um único ano (1962 e 1969)."
+  },
+  {
+    q: "Qual tenista venceu o Australian Open mais vezes no masculino?",
+    opts: ["Roger Federer", "Rafael Nadal", "Novak Djokovic", "Andre Agassi"],
+    answer: 2,
+    cat: "🏆 Recordes",
+    explain: "Novak Djokovic é o maior vencedor do Australian Open masculino, com 10 títulos no torneio realizado em Melbourne."
+  },
+  {
+    q: "Steffi Graf é a única tenista a ter vencido o 'Golden Slam'. Em que ano ela fez isso?",
+    opts: ["1984", "1986", "1988", "1990"],
+    answer: 2,
+    cat: "🏆 Recordes",
+    explain: "Em 1988, Steffi Graf venceu os quatro Grand Slams e a medalha de ouro olímpica de Seul no mesmo ano — façanha única na história do tênis feminino."
+  },
+  // --- PAÍSES ---
+  {
+    q: "De qual país é a tenista Iga Świątek?",
+    opts: ["República Tcheca", "Polônia", "Hungria", "Eslováquia"],
+    answer: 1,
+    cat: "🌍 Países",
+    explain: "Iga Świątek é polonesa. Ela se tornou a primeira polonesa a vencer um Grand Slam ao ganhar Roland Garros em 2020."
+  },
+  {
+    q: "Serena Williams é natural de qual país?",
+    opts: ["Canadá", "Reino Unido", "Estados Unidos", "Jamaica"],
+    answer: 2,
+    cat: "🌍 Países",
+    explain: "Serena Williams é norte-americana, nascida em Saginaw, Michigan. É considerada uma das maiores atletas da história do esporte."
+  },
+  {
+    q: "Carlos Alcaraz é de qual país?",
+    opts: ["Argentina", "México", "Espanha", "Portugal"],
+    answer: 2,
+    cat: "🌍 Países",
+    explain: "Carlos Alcaraz é espanhol, de El Palmar (Murcia). Ele se tornou o mais jovem número 1 do mundo da história em 2022."
+  },
+  {
+    q: "Jannik Sinner, que ganhou o Australian Open de 2024, é de qual país?",
+    opts: ["Espanha", "Suíça", "Itália", "Áustria"],
+    answer: 2,
+    cat: "🌍 Países",
+    explain: "Jannik Sinner é italiano, de San Candido, no norte da Itália. Ele venceu o Australian Open de 2024, seu primeiro Grand Slam."
+  },
+  {
+    q: "Ash Barty, ex-número 1 do mundo que se aposentou jovem em 2022, é de qual país?",
+    opts: ["Nova Zelândia", "África do Sul", "Austrália", "Reino Unido"],
+    answer: 2,
+    cat: "🌍 Países",
+    explain: "Ash Barty é australiana. Ela se aposentou em março de 2022, com apenas 25 anos, logo após vencer o Australian Open — seu terceiro título de Grand Slam."
+  },
+  {
+    q: "Novak Djokovic representa qual país?",
+    opts: ["Croácia", "Sérvia", "Eslovênia", "Bulgária"],
+    answer: 1,
+    cat: "🌍 Países",
+    explain: "Novak Djokovic é sérvio, nascido em Belgrado. Ele é o maior vencedor de Grand Slams da história masculina com 24 títulos."
+  },
+  {
+    q: "Pete Sampras, lenda do tênis nos anos 90, representa qual país?",
+    opts: ["Grécia", "Estados Unidos", "Austrália", "Canadá"],
+    answer: 1,
+    cat: "🌍 Países",
+    explain: "Pete Sampras é norte-americano, nascido em Washington D.C. Ele dominou o tênis nos anos 90, com 14 títulos de Grand Slam."
+  },
+  {
+    q: "Bianca Andreescu, campeã do US Open de 2019, é de qual país?",
+    opts: ["Romênia", "Canadá", "Hungria", "França"],
+    answer: 1,
+    cat: "🌍 Países",
+    explain: "Bianca Andreescu é canadense. Ela fez história ao se tornar a primeira canadense a vencer um Grand Slam ao conquistar o US Open em 2019."
+  },
+  {
+    q: "De qual país é o lendário tenista Boris Becker, tricampeão de Wimbledon?",
+    opts: ["Áustria", "Suíça", "Alemanha", "Holanda"],
+    answer: 2,
+    cat: "🌍 Países",
+    explain: "Boris Becker é alemão, nascido em Leimen. Ele venceu Wimbledon pela primeira vez em 1985, com apenas 17 anos, sendo o mais jovem campeão da história do torneio."
+  },
+  {
+    q: "Gael Monfils, famoso pelo estilo atlético e acrobático, representa qual país?",
+    opts: ["Senegal", "França", "Martinica", "Costa do Marfim"],
+    answer: 1,
+    cat: "🌍 Países",
+    explain: "Gael Monfils é francês, nascido em Paris. Ele é conhecido por defesas espetaculares e uma das mais longas carreiras do tênis moderno."
+  },
+  // --- CURIOSIDADES E JOGO ---
+  {
+    q: "Como se chama o saque que o adversário não consegue nem tocar?",
+    opts: ["Winner", "Let", "Deuce", "Ace"],
+    answer: 3,
+    cat: "🎯 Curiosidades",
+    explain: "O 'Ace' é quando o saque é tão bom que o adversário não consegue tocar na bola. É um ponto direto para quem sacou."
+  },
+  {
+    q: "Qual Grand Slam é jogado em quadra de saibro (terra batida)?",
+    opts: ["Wimbledon", "US Open", "Australian Open", "Roland Garros"],
+    answer: 3,
+    cat: "🎯 Curiosidades",
+    explain: "Roland Garros, em Paris, é o único Grand Slam disputado em saibro. Wimbledon é grama, e Australian Open e US Open são quadras duras."
+  },
+  {
+    q: "O que é um 'bagel' no vocabulário do tênis?",
+    opts: ["Ganhar um set por 6 a 0", "Erro não forçado", "Saque faltado", "Virada de set"],
+    answer: 0,
+    cat: "🎯 Curiosidades",
+    explain: "No tênis, 'bagel' é o nome informal para vencer um set por 6 a 0. O '0' se parece visualmente com um bagel (rosca), daí o apelido."
+  },
+  {
+    q: "Qual é a superfície da quadra de Wimbledon?",
+    opts: ["Saibro", "Quadra dura", "Grama", "Carpete"],
+    answer: 2,
+    cat: "🎯 Curiosidades",
+    explain: "Wimbledon é o único Grand Slam disputado em quadra de grama, e o mais tradicional do tênis. É realizado em Londres, Inglaterra."
+  },
+  {
+    q: "Como se chama o golpe dado com o lado não dominante da raquete (para destros, seria o lado esquerdo)?",
+    opts: ["Forehand", "Volley", "Backhand", "Smash"],
+    answer: 2,
+    cat: "🎯 Curiosidades",
+    explain: "O 'Backhand' (ou 'Revés' em português) é o golpe executado com o lado não dominante. É um dos fundamentos mais importantes do tênis."
+  },
+  {
+    q: "O que é o 'Grand Slam' no tênis?",
+    opts: ["Vencer os 4 maiores torneios do mundo no mesmo ano", "Qualquer torneio de nível elite", "Vencer um torneio sem perder nenhum set", "O ranking mais alto possível"],
+    answer: 0,
+    cat: "🎯 Curiosidades",
+    explain: "Grand Slam se refere aos 4 maiores torneios: Australian Open, Roland Garros, Wimbledon e US Open. Vencer todos no mesmo ano é chamado de 'Grand Slam Calendário'."
+  },
+  {
+    q: "Como se chama o golpe em que o jogador bate na bola no ar, antes de ela tocar no chão?",
+    opts: ["Lob", "Drop shot", "Volley", "Slice"],
+    answer: 2,
+    cat: "🎯 Curiosidades",
+    explain: "O 'Volley' (ou 'Voleio') é quando o jogador intercepta a bola no ar, sem deixá-la quicar. Geralmente é feito próximo à rede."
+  },
+  {
+    q: "O que é um 'winner' no tênis?",
+    opts: ["Qualquer ponto vencido", "Um golpe que o adversário não consegue alcançar ou devolver", "Um saque perfeito", "Ponto vencido no tie-break"],
+    answer: 1,
+    cat: "🎯 Curiosidades",
+    explain: "Um 'winner' é qualquer golpe — exceto o saque — que o adversário não consegue alcançar ou devolver dentro da quadra. É diferente do erro não forçado do oponente."
+  },
+  {
+    q: "Qual é o nome do golpe em que a bola sobe muito alto para passar por cima do adversário na rede?",
+    opts: ["Smash", "Lob", "Drop shot", "Slice"],
+    answer: 1,
+    cat: "🎯 Curiosidades",
+    explain: "O 'Lob' é um golpe em que a bola é levantada em uma trajetória alta, por cima do adversário que está posicionado perto da rede."
+  },
+  {
+    q: "O que significa 'unforced error' (erro não forçado)?",
+    opts: ["Erro causado pela pressão do adversário", "Erro cometido sem pressão, por falha própria do jogador", "Falta no saque", "Bola que cai na rede"],
+    answer: 1,
+    cat: "🎯 Curiosidades",
+    explain: "Um 'unforced error' é um erro que o jogador comete sem estar sob pressão direta do adversário — uma falha própria, como mandar a bola para fora em um golpe tranquilo."
+  }
+];
+
+let currentQ = 0;
+let score = 0;
+let correct = 0;
+let wrong = 0;
+let answered = false;
+let shuffled = [];
+
+function shuffle(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function startQuiz() {
+  shuffled = shuffle(questions);
+  currentQ = 0; score = 0; correct = 0; wrong = 0;
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = shuffled[currentQ];
+  const total = shuffled.length;
+
+  document.getElementById('q-number').textContent = `PERGUNTA ${currentQ + 1} / ${total}`;
+  document.getElementById('q-category').textContent = q.cat;
+  document.getElementById('question-text').textContent = q.q;
+  document.getElementById('progress-bar').style.width = `${((currentQ) / total) * 100}%`;
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
+    btn.onclick = () => selectOption(i);
+    grid.appendChild(btn);
+  });
+
+  const fb = document.getElementById('feedback-box');
+  fb.className = 'feedback-box';
+  fb.textContent = '';
+
+  const next = document.getElementById('btn-next');
+  next.className = 'btn-next';
+  next.textContent = currentQ < shuffled.length - 1 ? 'Próxima →' : 'Ver Resultado';
+}
+
+function selectOption(idx) {
+  if (answered) return;
+  answered = true;
+
+  const q = shuffled[currentQ];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const fb = document.getElementById('feedback-box');
+
+  if (idx === q.answer) {
+    btns[idx].classList.add('correct');
+    fb.className = 'feedback-box correct-fb show';
+    fb.textContent = '✓ Correto! ' + q.explain;
+    correct++;
+    score += 10;
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[q.answer].classList.add('correct');
+    fb.className = 'feedback-box wrong-fb show';
+    fb.textContent = '✗ Incorreto. ' + q.explain;
+    wrong++;
+  }
+
+  document.getElementById('btn-next').classList.add('show');
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= shuffled.length) {
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResult() {
+  showScreen('screen-result');
+  const total = shuffled.length;
+  const pct = Math.round((correct / total) * 100);
+
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('rb-correct').textContent = correct;
+  document.getElementById('rb-wrong').textContent = wrong;
+
+  // Conic gradient no círculo
+  const deg = (correct / total) * 360;
+  document.getElementById('score-circle').style.background =
+    `conic-gradient(#52b788 ${deg}deg, rgba(255,255,255,0.07) ${deg}deg)`;
+
+  let title, sub;
+  if (pct >= 90) { title = '🏆 Campeão!'; sub = 'Você é um verdadeiro especialista em tênis'; }
+  else if (pct >= 70) { title = '🎾 Muito bom!'; sub = 'Você sabe bastante sobre o esporte'; }
+  else if (pct >= 50) { title = '👏 Bom jogo!'; sub = 'Você tem uma boa base de conhecimento'; }
+  else { title = '📚 Continue praticando'; sub = 'Com mais estudo você chega lá!'; }
+
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-sub').textContent = sub;
+}
+
+function resetQuiz() {
+  startQuiz();
+}
+
+// Inicia na home
+showScreen('screen-home');
+</script>
+</body>
+</html>
